@@ -1,0 +1,370 @@
+.main {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 1rem 4rem;
+}
+
+/* Header */
+.header {
+  background: var(--aa-navy);
+  margin: 0 -1rem;
+  padding: 1.25rem 1rem;
+  margin-bottom: 2rem;
+}
+
+.headerInner {
+  max-width: 720px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo {
+  flex-shrink: 0;
+}
+
+.title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #fff;
+  margin: 0 0 2px;
+  letter-spacing: -0.01em;
+}
+
+.subtitle {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0;
+}
+
+/* Form */
+.formSection {
+  background: #fff;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  .formSection {
+    background: #1e1e1e;
+  }
+}
+
+.form {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 140px;
+}
+
+.label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.input {
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 15px;
+  color: var(--text-primary);
+  background: var(--aa-gray);
+  transition: border-color 0.15s;
+  outline: none;
+}
+
+.input:focus {
+  border-color: var(--aa-red);
+  box-shadow: 0 0 0 3px rgba(200, 16, 46, 0.1);
+}
+
+.button {
+  height: 40px;
+  padding: 0 1.5rem;
+  background: var(--aa-red);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, transform 0.1s;
+  flex-shrink: 0;
+}
+
+.button:hover {
+  background: #a00c25;
+}
+
+.button:active {
+  transform: scale(0.98);
+}
+
+.button:disabled {
+  background: #aaa;
+  cursor: not-allowed;
+}
+
+.error {
+  margin-top: 1rem;
+  padding: 10px 14px;
+  background: var(--red-bg);
+  color: var(--red);
+  border-radius: var(--radius);
+  font-size: 14px;
+  border: 1px solid rgba(153, 60, 29, 0.2);
+}
+
+/* Loading */
+.loading {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--text-secondary);
+}
+
+.spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--border);
+  border-top-color: var(--aa-red);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loadingNote {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 6px;
+}
+
+/* Results */
+.results {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.flightHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.flightTitle {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 4px;
+  letter-spacing: -0.02em;
+}
+
+.flightDate {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.statRow {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.statPill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 14px;
+  background: var(--aa-gray);
+  border-radius: var(--radius);
+  min-width: 70px;
+}
+
+.statPillAccent {
+  background: var(--teal-bg);
+}
+
+.statVal {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1;
+  margin-bottom: 3px;
+}
+
+.statPillAccent .statVal {
+  color: var(--teal);
+}
+
+.statLabel {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* Column labels */
+.columnLabels {
+  display: flex;
+  justify-content: flex-end;
+  gap: 20px;
+  padding: 0 0 6px;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+}
+
+.columnCritic,
+.columnAudience {
+  width: 58px;
+  text-align: center;
+}
+
+/* Movie rows */
+.movieList {
+  border-bottom: 1px solid var(--border);
+}
+
+.movieRow {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.movieRow:last-child {
+  border-bottom: none;
+}
+
+.rank {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-weight: 500;
+  text-align: right;
+}
+
+.movieInfo {
+  min-width: 0;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 2px;
+}
+
+.titleLink,
+.titleText {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.titleLink:hover {
+  color: var(--aa-red);
+  text-decoration: none;
+}
+
+.freshBadge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 20px;
+  background: var(--teal-bg);
+  color: var(--teal);
+  white-space: nowrap;
+  letter-spacing: 0.01em;
+}
+
+.strongBadge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 20px;
+  background: var(--green-bg);
+  color: var(--green);
+  white-space: nowrap;
+}
+
+.meta {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.notFound {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* Scores column */
+.scores {
+  display: flex;
+  gap: 4px;
+}
+
+.scoreCol {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 58px;
+}
+
+.score {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1;
+  margin-bottom: 2px;
+}
+
+.scoreGreen { color: var(--teal); }
+.scoreMid  { color: var(--text-primary); }
+.scoreRed  { color: var(--red); }
+.scoreNa   { font-size: 16px; color: var(--text-muted); }
+
+.scoreLabel {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Footer */
+.footer {
+  margin-top: 2rem;
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: center;
+}
