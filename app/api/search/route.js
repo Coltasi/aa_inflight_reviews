@@ -120,10 +120,15 @@ export async function GET(request) {
     );
   }
 
-  // 3. Filter to movies only
+  // 3. Filter to movies only and deduplicate by title
+  const seen = new Set();
   const movies = (allTitles || []).filter((t) => {
     const type = (t.type || t.contentType || '').toUpperCase();
-    return !type.includes('EPISODE') && !type.includes('SERIES') && !type.includes('TV');
+    if (type.includes('EPISODE') || type.includes('SERIES') || type.includes('TV')) return false;
+    const key = (t.title || t.name || '').toLowerCase().trim();
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
   });
 
   if (!movies.length) {

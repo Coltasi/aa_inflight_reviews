@@ -91,12 +91,20 @@ export default function Home() {
   const sorted = useMemo(() => {
     if (!data?.movies) return [];
     const mv = [...data.movies];
+
+    const nullLast = (a, b, valA, valB, desc = true) => {
+      if (valA === null && valB === null) return 0;
+      if (valA === null) return 1;
+      if (valB === null) return -1;
+      return desc ? valB - valA : valA - valB;
+    };
+
     switch (sortBy) {
-      case 'rt-desc': return mv.sort((a,b) => (b.criticsScore ?? -1)   - (a.criticsScore ?? -1));
-      case 'rt-asc':  return mv.sort((a,b) => (a.criticsScore ?? 101)  - (b.criticsScore ?? 101));
-      case 'imdb':    return mv.sort((a,b) => (b.imdbScore ?? -1)      - (a.imdbScore ?? -1));
-      case 'newest':  return mv.sort((a,b) => (b.year ?? 0)            - (a.year ?? 0));
-      case 'oldest':  return mv.sort((a,b) => (a.year ?? 9999)         - (b.year ?? 9999));
+      case 'rt-desc': return mv.sort((a,b) => nullLast(a, b, a.criticsScore, b.criticsScore, true));
+      case 'rt-asc':  return mv.sort((a,b) => nullLast(a, b, a.criticsScore, b.criticsScore, false));
+      case 'imdb':    return mv.sort((a,b) => nullLast(a, b, a.imdbScore,    b.imdbScore,    true));
+      case 'newest':  return mv.sort((a,b) => nullLast(a, b, a.year,         b.year,         true));
+      case 'oldest':  return mv.sort((a,b) => nullLast(a, b, a.year,         b.year,         false));
       case 'az':      return mv.sort((a,b) => a.title.localeCompare(b.title));
       default:        return mv;
     }
@@ -193,7 +201,7 @@ export default function Home() {
 
           <div className={styles.movieList}>
             {sorted.map((movie, i) => (
-              <MovieRow key={movie.title} movie={movie} rank={i + 1} />
+              <MovieRow key={`${movie.title}-${i}`} movie={movie} rank={i + 1} />
             ))}
           </div>
 
