@@ -3,6 +3,13 @@
 import { useState, useMemo } from 'react';
 import s from './page.module.css';
 
+function nullLast(a, b, desc = true) {
+  if (a === null && b === null) return 0;
+  if (a === null) return 1;
+  if (b === null) return -1;
+  return desc ? b - a : a - b;
+}
+
 const SORT_OPTIONS = [
   { key: 'rt-desc', label: 'Best RT' },
   { key: 'rt-asc',  label: 'Worst RT' },
@@ -81,13 +88,6 @@ export default function Home() {
     } catch { setError('Network error — please try again.'); }
     finally  { setLoading(false); }
   }
-
-  const nullLast = (a, b, desc = true) => {
-    if (a === null && b === null) return 0;
-    if (a === null) return 1;
-    if (b === null) return -1;
-    return desc ? b - a : a - b;
-  };
 
   const sorted = useMemo(() => {
     if (!data?.movies) return [];

@@ -21,12 +21,16 @@ function parseOMDB(data) {
   const genre    = data.Genre && data.Genre !== 'N/A'
     ? data.Genre.split(',').slice(0, 2).map((g) => g.trim()).join(' / ') : null;
   const rating   = data.Rated && data.Rated !== 'N/A' ? data.Rated : null;
+  // Parse year — OMDB Year can be "2025" or "2024–2025" for series
+  const yearStr  = data.Year && data.Year !== 'N/A' ? data.Year.slice(0, 4) : null;
+  const year     = yearStr ? parseInt(yearStr, 10) : null;
   return {
     criticsScore: rtScore,
     imdbScore:    imdbRaw !== null ? Math.round(imdbRaw * 10) : null,
     imdbRating:   imdbRaw ? `${imdbRaw}/10` : null,
     genre,
     rating,
+    year,
     imdbId: data.imdbID ?? null,
     found: true,
   };
@@ -156,11 +160,12 @@ export async function GET(request) {
   const results = await Promise.all(
     movies.map(async (movie) => {
       const title = movie.title || movie.name || '';
-      const year = movie.year ? String(movie.year) : '';
-      const omdb = await getOMDBScores(title, year);
+      const aaYear = movie.year ? String(movie.year) : '';
+      const omdb = await getOMDBScores(title, aaYear);
       return {
         title,
-        year: movie.year || null,
+        // Prefer OMDB year (reliable) over AA catalog year (often missing)
+        year: omdb.year || movie.year || null,
         rating: omdb.rating || movie.contentRating || movie.rating || null,
         genre: omdb.genre || movie.genre || null,
         criticsScore: omdb.criticsScore,
