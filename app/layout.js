@@ -1,8 +1,8 @@
 import './globals.css';
 
 export const metadata = {
-  title: 'AA Movie Rater — Inflight Entertainment Guide',
-  description: 'Look up Rotten Tomatoes scores for your American Airlines inflight movies',
+  title: 'The Cabin Critic — Inflight Movie Ratings',
+  description: 'Know what to watch before you board. Rotten Tomatoes & IMDb scores for your AA inflight entertainment.',
 };
 
 export default function RootLayout({ children }) {
