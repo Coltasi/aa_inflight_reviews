@@ -48,8 +48,8 @@ function MovieRow({ movie, rank }) {
           <span className={styles.scoreLabel}>critics</span>
         </div>
         <div className={styles.scoreCol}>
-          <ScoreBadge score={movie.audienceScore} type="audience" />
-          <span className={styles.scoreLabel}>audience</span>
+          <ScoreBadge score={movie.imdbScore} type="imdb" />
+          <span className={styles.scoreLabel}>IMDb</span>
         </div>
       </div>
     </div>
@@ -176,7 +176,7 @@ export default function Home() {
 
           <div className={styles.columnLabels}>
             <span className={styles.columnCritic}>Critics</span>
-            <span className={styles.columnAudience}>Audience</span>
+            <span className={styles.columnAudience}>IMDb</span>
           </div>
 
           <div className={styles.movieList}>
