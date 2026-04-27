@@ -52,7 +52,16 @@ export async function GET(request) {
           });
           const titlesBody = await titlesRes.text();
           results.titlesStatus = titlesRes.status;
-          results.titlesBody = titlesBody.slice(0, 500);
+          results.titlesBody = titlesBody.slice(0, 1000);
+          // Show first movie object in full
+          try {
+            const parsed = JSON.parse(titlesBody);
+            const arr = parsed.data ?? parsed;
+            results.firstMovie = arr[0];
+            results.totalTitles = arr.length;
+          } catch(e) {
+            results.titlesParseError = e.message;
+          }
         }
       } catch (e) {
         results.parseError = e.message;
