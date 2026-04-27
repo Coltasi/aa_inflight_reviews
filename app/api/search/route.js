@@ -14,53 +14,67 @@ const AA_HEADERS = {
   'Sec-Fetch-Site': 'same-origin',
 };
 
+function parseOMDB(data) {
+  const rtRating = data.Ratings?.find((r) => r.Source === 'Rotten Tomatoes');
+  const rtScore  = rtRating ? parseInt(rtRating.Value, 10) : null;
+  const imdbRaw  = data.imdbRating && data.imdbRating !== 'N/A' ? parseFloat(data.imdbRating) : null;
+  const genre    = data.Genre && data.Genre !== 'N/A'
+    ? data.Genre.split(',').slice(0, 2).map((g) => g.trim()).join(' / ') : null;
+  const rating   = data.Rated && data.Rated !== 'N/A' ? data.Rated : null;
+  return {
+    criticsScore: rtScore,
+    imdbScore:    imdbRaw !== null ? Math.round(imdbRaw * 10) : null,
+    imdbRating:   imdbRaw ? `${imdbRaw}/10` : null,
+    genre,
+    rating,
+    imdbId: data.imdbID ?? null,
+    found: true,
+  };
+}
+
+async function omdbFetch(params) {
+  try {
+    const qs  = new URLSearchParams({ ...params, apikey: OMDB_KEY });
+    const res = await fetch(`https://www.omdbapi.com/?${qs}`, { signal: AbortSignal.timeout(8000) });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.Response === 'False' ? null : data;
+  } catch { return null; }
+}
+
 async function getOMDBScores(title, year) {
-  // Try with year first, then without if not found
-  const queries = year
-    ? [{ t: title, y: year }, { t: title }]
-    : [{ t: title }];
-
+  // 1. Search by title (with year, then without)
+  const queries = year ? [{ t: title, y: year }, { t: title }] : [{ t: title }];
+  let data = null;
   for (const params of queries) {
-    try {
-      const qs = new URLSearchParams({ ...params, apikey: OMDB_KEY });
-      const res = await fetch(`https://www.omdbapi.com/?${qs}`, {
-        signal: AbortSignal.timeout(8000),
-      });
-      if (!res.ok) continue;
+    data = await omdbFetch(params);
+    if (data) break;
+  }
 
-      const data = await res.json();
-      if (data.Response === 'False') continue;
+  if (!data) return { criticsScore: null, imdbScore: null, imdbRating: null, genre: null, rating: null, imdbId: null, found: false };
 
-      const rtRating = data.Ratings?.find((r) => r.Source === 'Rotten Tomatoes');
-      const rtScore = rtRating ? parseInt(rtRating.Value, 10) : null;
+  const parsed = parseOMDB(data);
 
-      const imdbRaw = data.imdbRating && data.imdbRating !== 'N/A'
-        ? parseFloat(data.imdbRating)
-        : null;
-      // Convert IMDb x/10 → percentage for display consistency
-      const imdbScore = imdbRaw !== null ? Math.round(imdbRaw * 10) : null;
-
-      const genre = data.Genre && data.Genre !== 'N/A'
-        ? data.Genre.split(',').slice(0, 2).map((g) => g.trim()).join(' / ')
-        : null;
-
-      const rating = data.Rated && data.Rated !== 'N/A' ? data.Rated : null;
-
+  // 2. If IMDb rating came back N/A but we have an imdbID, re-fetch by ID —
+  //    OMDB sometimes returns more complete data this way for newer films
+  if (!parsed.imdbRating && parsed.imdbId) {
+    const byId = await omdbFetch({ i: parsed.imdbId });
+    if (byId) {
+      const retry = parseOMDB(byId);
+      // Merge: take any field that was missing in the first pass
       return {
-        criticsScore: rtScore,
-        imdbScore,
-        imdbRating: imdbRaw ? `${imdbRaw}/10` : null,
-        genre,
-        rating,
-        imdbId: data.imdbID,
+        criticsScore: parsed.criticsScore ?? retry.criticsScore,
+        imdbScore:    parsed.imdbScore    ?? retry.imdbScore,
+        imdbRating:   parsed.imdbRating   ?? retry.imdbRating,
+        genre:        parsed.genre        ?? retry.genre,
+        rating:       parsed.rating       ?? retry.rating,
+        imdbId:       parsed.imdbId,
         found: true,
       };
-    } catch {
-      // try next query
     }
   }
 
-  return { criticsScore: null, imdbScore: null, imdbRating: null, genre: null, rating: null, imdbId: null, found: false };
+  return parsed;
 }
 
 export async function GET(request) {
