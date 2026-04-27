@@ -32,6 +32,8 @@ export default function RootLayout({ children }) {
         <meta name="theme-color" content="#001141" />
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/icon-192.png" />
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="icon" href="/icon-192.png" type="image/png" />
       </head>
       <body>{children}</body>
     </html>
