@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
 
+// Tell Vercel to allow up to 60 seconds for this function
+export const maxDuration = 60;
+
 const BROWSER_HEADERS = {
   'User-Agent':
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
@@ -11,10 +14,6 @@ const BROWSER_HEADERS = {
   'sec-ch-ua': '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
   'sec-ch-ua-mobile': '?0',
   'sec-ch-ua-platform': '"macOS"',
-  'Sec-Fetch-Dest': 'document',
-  'Sec-Fetch-Mode': 'navigate',
-  'Sec-Fetch-Site': 'same-origin',
-  'Sec-Fetch-User': '?1',
 };
 
 function makeSlug(title) {
@@ -26,6 +25,37 @@ function makeSlug(title) {
     .replace(/^_|_$/g, '');
 }
 
+async function fetchRTSlug(slug) {
+  const url = `https://www.rottentomatoes.com/m/${slug}`;
+  const res = await fetch(url, {
+    headers: BROWSER_HEADERS,
+    redirect: 'follow',
+    signal: AbortSignal.timeout(8000),
+  });
+
+  if (res.status !== 200 || !res.url.includes('/m/')) return null;
+
+  const text = await res.text();
+  const criticMatch = text.match(
+    /"criticsScore":\{"averageRating":"[^"]*","certified":(true|false)[^}]*?"score":"(\d+)"/
+  );
+  const audienceMatch = text.match(/"audienceScore":\{[^}]*?"score":"(\d+)"/);
+  const genreMatch = text.match(/"metadataGenres":\[([^\]]+)\]/);
+
+  const genres = genreMatch
+    ? genreMatch[1].replace(/"/g, '').split(',').map((g) => g.trim()).filter(Boolean).slice(0, 2).join(' / ')
+    : null;
+
+  return {
+    criticsScore: criticMatch ? parseInt(criticMatch[2], 10) : null,
+    audienceScore: audienceMatch ? parseInt(audienceMatch[1], 10) : null,
+    certified: criticMatch ? criticMatch[1] === 'true' : false,
+    genre: genres,
+    rtUrl: res.url,
+    found: true,
+  };
+}
+
 async function getRTScores(title, year) {
   const baseSlug = makeSlug(title);
   const slugsToTry = [
@@ -34,56 +64,19 @@ async function getRTScores(title, year) {
     `${baseSlug}_${String(year).slice(2)}`,
   ];
 
-  for (const slug of slugsToTry) {
-    try {
-      const url = `https://www.rottentomatoes.com/m/${slug}`;
-      const res = await fetch(url, {
-        headers: BROWSER_HEADERS,
-        redirect: 'follow',
-        signal: AbortSignal.timeout(12000),
-      });
+  // Race all slug variants in parallel — take first winner
+  const attempts = slugsToTry.map((slug) =>
+    fetchRTSlug(slug).catch(() => null)
+  );
+  const settled = await Promise.all(attempts);
+  const winner = settled.find((r) => r !== null);
 
-      if (res.status === 200 && res.url.includes('/m/')) {
-        const text = await res.text();
-
-        const criticMatch = text.match(
-          /"criticsScore":\{"averageRating":"[^"]*","certified":(true|false)[^}]*?"score":"(\d+)"/
-        );
-        const audienceMatch = text.match(
-          /"audienceScore":\{[^}]*?"score":"(\d+)"/
-        );
-        const genreMatch = text.match(/"metadataGenres":\[([^\]]+)\]/);
-
-        const genres = genreMatch
-          ? genreMatch[1]
-              .replace(/"/g, '')
-              .split(',')
-              .map((g) => g.trim())
-              .filter(Boolean)
-              .slice(0, 2)
-              .join(' / ')
-          : null;
-
-        return {
-          criticsScore: criticMatch ? parseInt(criticMatch[2], 10) : null,
-          audienceScore: audienceMatch ? parseInt(audienceMatch[1], 10) : null,
-          certified: criticMatch ? criticMatch[1] === 'true' : false,
-          genre: genres,
-          rtUrl: res.url,
-          found: true,
-        };
-      }
-    } catch {
-      // try next slug
-    }
-  }
-
-  return { criticsScore: null, audienceScore: null, certified: false, genre: null, rtUrl: null, found: false };
+  return winner ?? { criticsScore: null, audienceScore: null, certified: false, genre: null, rtUrl: null, found: false };
 }
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
-  const flightNum = searchParams.get('flight')?.trim().toUpperCase().replace(/^AA\s*/i, '');
+  const flightNum = searchParams.get('flight')?.trim().replace(/^AA\s*/i, '');
   const date = searchParams.get('date'); // YYYY-MM-DD
 
   if (!flightNum || !date) {
@@ -105,7 +98,7 @@ export async function GET(request) {
           'Sec-Fetch-Mode': 'cors',
           'Sec-Fetch-Site': 'same-origin',
         },
-        signal: AbortSignal.timeout(20000),
+        signal: AbortSignal.timeout(15000),
       }
     );
     if (!flightRes.ok) {
@@ -116,7 +109,6 @@ export async function GET(request) {
       );
     }
     const flightJson = await flightRes.json();
-    // API returns { error: null, data: [...] } wrapper
     flights = flightJson.data ?? flightJson;
   } catch (e) {
     return NextResponse.json(
@@ -133,7 +125,7 @@ export async function GET(request) {
   }
 
   // Pick the flight that matches the requested number exactly
-  const flight = flights.find(f => String(f.flight_number) === String(flightNum)) ?? flights[0];
+  const flight = flights.find((f) => String(f.flight_number) === String(flightNum)) ?? flights[0];
 
   // 2. Fetch the title catalog for this flight
   let allTitles;
@@ -150,11 +142,10 @@ export async function GET(request) {
           'Sec-Fetch-Mode': 'cors',
           'Sec-Fetch-Site': 'same-origin',
         },
-        signal: AbortSignal.timeout(20000),
+        signal: AbortSignal.timeout(15000),
       }
     );
     const titlesJson = await titlesRes.json();
-    // API may return { error: null, data: [...] } wrapper
     allTitles = titlesJson.data ?? titlesJson;
   } catch (e) {
     return NextResponse.json(
@@ -166,7 +157,6 @@ export async function GET(request) {
   // 3. Filter to movies only (skip episodes/TV series)
   const movies = (allTitles || []).filter((t) => {
     const type = (t.type || t.contentType || '').toUpperCase();
-    // keep items that are movies or have no type — exclude TV episodes/series
     return !type.includes('EPISODE') && !type.includes('SERIES') && !type.includes('TV');
   });
 
@@ -177,41 +167,32 @@ export async function GET(request) {
     );
   }
 
-  // 4. Fetch RT scores in parallel (8 at a time to avoid rate limiting)
-  const CHUNK = 8;
-  const results = [];
-  for (let i = 0; i < movies.length; i += CHUNK) {
-    const chunk = movies.slice(i, i + CHUNK);
-    const chunkResults = await Promise.all(
-      chunk.map(async (movie) => {
-        const title = movie.title || movie.name || '';
-        const year = movie.year ? String(movie.year) : '';
-        const rt = await getRTScores(title, year);
-        return {
-          title,
-          year: movie.year || null,
-          rating: movie.contentRating || movie.rating || null,
-          genre: rt.genre || movie.genre || null,
-          criticsScore: rt.criticsScore,
-          audienceScore: rt.audienceScore,
-          certified: rt.certified,
-          rtUrl: rt.rtUrl,
-          rtFound: rt.found,
-        };
-      })
-    );
-    results.push(...chunkResults);
-  }
+  // 4. Fetch ALL RT scores fully in parallel
+  const results = await Promise.all(
+    movies.map(async (movie) => {
+      const title = movie.title || movie.name || '';
+      const year = movie.year ? String(movie.year) : '';
+      const rt = await getRTScores(title, year);
+      return {
+        title,
+        year: movie.year || null,
+        rating: movie.contentRating || movie.rating || null,
+        genre: rt.genre || movie.genre || null,
+        criticsScore: rt.criticsScore,
+        audienceScore: rt.audienceScore,
+        certified: rt.certified,
+        rtUrl: rt.rtUrl,
+        rtFound: rt.found,
+      };
+    })
+  );
 
-  // 5. Sort: rated by critic score desc, then unrated
+  // 5. Sort by critic score desc, then audience score
   results.sort((a, b) => {
-    if (a.criticsScore !== null && b.criticsScore !== null)
-      return b.criticsScore - a.criticsScore;
+    if (a.criticsScore !== null && b.criticsScore !== null) return b.criticsScore - a.criticsScore;
     if (a.criticsScore !== null) return -1;
     if (b.criticsScore !== null) return 1;
-    // both null — audience score as tiebreaker
-    if (a.audienceScore !== null && b.audienceScore !== null)
-      return b.audienceScore - a.audienceScore;
+    if (a.audienceScore !== null && b.audienceScore !== null) return b.audienceScore - a.audienceScore;
     if (a.audienceScore !== null) return -1;
     if (b.audienceScore !== null) return 1;
     return 0;
@@ -221,8 +202,8 @@ export async function GET(request) {
     flight: {
       number: `AA${flightNum}`,
       id: flight.id,
-      departure: flight.departureStation || flight.origin,
-      arrival: flight.arrivalStation || flight.destination,
+      departure: flight.dep || flight.departureStation || flight.origin,
+      arrival: flight.arv || flight.arrivalStation || flight.destination,
       date,
     },
     totalMovies: results.length,
