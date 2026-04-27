@@ -211,20 +211,21 @@
   position: absolute;
   bottom: 12px;
   left: 0;
-  animation: takeoff 2.2s ease-in forwards infinite;
+  will-change: transform, opacity;
+  animation: takeoff 2.4s ease-in-out infinite;
 }
 
 .planeTakeoff {
   font-size: 32px;
   display: block;
-  transform: rotate(0deg);
 }
 
 @keyframes takeoff {
-  0%   { left: 0;    bottom: 12px; transform: rotate(0deg); opacity: 1; }
-  60%  { left: 60%;  bottom: 30px; transform: rotate(-15deg); opacity: 1; }
-  85%  { left: 100%; bottom: 55px; transform: rotate(-20deg); opacity: 0; }
-  100% { left: 0;    bottom: 12px; transform: rotate(0deg); opacity: 0; }
+  0%   { transform: translateX(0)     translateY(0)     rotate(0deg);   opacity: 1; }
+  65%  { transform: translateX(165px) translateY(-18px) rotate(-15deg); opacity: 1; }
+  85%  { transform: translateX(270px) translateY(-44px) rotate(-20deg); opacity: 0; animation-timing-function: step-start; }
+  86%  { transform: translateX(0)     translateY(0)     rotate(0deg);   opacity: 0; }
+  100% { transform: translateX(0)     translateY(0)     rotate(0deg);   opacity: 0; }
 }
 
 .runwayLine {
