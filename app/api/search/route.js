@@ -115,7 +115,9 @@ export async function GET(request) {
         { status: 502 }
       );
     }
-    flights = await flightRes.json();
+    const flightJson = await flightRes.json();
+    // API returns { error: null, data: [...] } wrapper
+    flights = flightJson.data ?? flightJson;
   } catch (e) {
     return NextResponse.json(
       { error: `Could not reach the AA entertainment catalog: ${e.message}` },
@@ -130,7 +132,8 @@ export async function GET(request) {
     );
   }
 
-  const flight = flights[0];
+  // Pick the flight that matches the requested number exactly
+  const flight = flights.find(f => String(f.flight_number) === String(flightNum)) ?? flights[0];
 
   // 2. Fetch the title catalog for this flight
   let allTitles;
@@ -150,10 +153,12 @@ export async function GET(request) {
         signal: AbortSignal.timeout(20000),
       }
     );
-    allTitles = await titlesRes.json();
-  } catch {
+    const titlesJson = await titlesRes.json();
+    // API may return { error: null, data: [...] } wrapper
+    allTitles = titlesJson.data ?? titlesJson;
+  } catch (e) {
     return NextResponse.json(
-      { error: 'Could not load the entertainment catalog for this flight.' },
+      { error: `Could not load the entertainment catalog: ${e.message}` },
       { status: 502 }
     );
   }
