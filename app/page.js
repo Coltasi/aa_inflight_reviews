@@ -1,56 +1,65 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import styles from './page.module.css';
 
-function ScoreBadge({ score, type }) {
-  if (score === null || score === undefined) return <span className={styles.scoreNa}>—</span>;
-  const strong = score >= 80;
-  const low = score < 55;
-  const cls = strong ? styles.scoreGreen : low ? styles.scoreRed : styles.scoreMid;
-  return <span className={`${styles.score} ${cls}`}>{score}%</span>;
+const SORT_OPTIONS = [
+  { key: 'rt-desc', label: 'Best RT' },
+  { key: 'rt-asc',  label: 'Worst RT' },
+  { key: 'imdb',    label: 'Best IMDb' },
+  { key: 'newest',  label: 'Newest' },
+  { key: 'oldest',  label: 'Oldest' },
+  { key: 'az',      label: 'A–Z' },
+];
+
+function RTBadge({ score }) {
+  if (score === null || score === undefined) {
+    return <div className={`${styles.rtBadge} ${styles.rtNa}`}><span className={styles.rtNum}>—</span><span className={styles.rtSrc}>RT</span></div>;
+  }
+  const cls = score >= 80 ? styles.rtHigh : score >= 60 ? styles.rtMid : styles.rtLow;
+  return (
+    <div className={`${styles.rtBadge} ${cls}`}>
+      <span className={styles.rtNum}>{score}%</span>
+      <span className={styles.rtSrc}>RT</span>
+    </div>
+  );
+}
+
+function ImdbBadge({ rating }) {
+  if (!rating) return <div className={`${styles.imdbBadge} ${styles.imdbNa}`}><span className={styles.imdbNum}>—</span><span className={styles.imdbSrc}>IMDb</span></div>;
+  return (
+    <div className={styles.imdbBadge}>
+      <span className={styles.imdbNum}>{rating}</span>
+      <span className={styles.imdbSrc}>IMDb</span>
+    </div>
+  );
 }
 
 function MovieRow({ movie, rank }) {
-  const hasScores = movie.criticsScore !== null || movie.audienceScore !== null;
+  const imdbUrl = movie.imdbId ? `https://www.imdb.com/title/${movie.imdbId}/` : null;
+  const isStrong = movie.criticsScore !== null && movie.criticsScore >= 80;
+
   return (
-    <div className={styles.movieRow}>
+    <div className={`${styles.movieRow} ${isStrong ? styles.movieRowStrong : ''}`}>
       <span className={styles.rank}>{rank}</span>
       <div className={styles.movieInfo}>
         <div className={styles.titleRow}>
-          {movie.rtUrl ? (
-            <a href={movie.rtUrl} target="_blank" rel="noopener noreferrer" className={styles.titleLink}>
-              {movie.title}
-            </a>
+          {imdbUrl ? (
+            <a href={imdbUrl} target="_blank" rel="noopener noreferrer" className={styles.titleLink}>{movie.title}</a>
           ) : (
             <span className={styles.titleText}>{movie.title}</span>
           )}
-          {movie.certified && (
-            <span className={styles.freshBadge}>Certified Fresh</span>
-          )}
-          {movie.criticsScore !== null && movie.criticsScore >= 80 && !movie.certified && (
-            <span className={styles.strongBadge}>Strong pick</span>
-          )}
+          {isStrong && <span className={styles.strongBadge}>Strong pick</span>}
         </div>
         <div className={styles.meta}>
           {[movie.genre, movie.year, movie.rating].filter(Boolean).join(' · ')}
-          {!hasScores && !movie.rtFound && (
-            <span className={styles.notFound}> · not on RT</span>
-          )}
-          {!hasScores && movie.rtFound && (
-            <span className={styles.notFound}> · insufficient reviews</span>
-          )}
+          {!movie.rtFound && <span className={styles.notFound}> · not in OMDB</span>}
+          {movie.rtFound && movie.criticsScore === null && <span className={styles.notFound}> · no RT score yet</span>}
         </div>
       </div>
-      <div className={styles.scores}>
-        <div className={styles.scoreCol}>
-          <ScoreBadge score={movie.criticsScore} type="critic" />
-          <span className={styles.scoreLabel}>critics</span>
-        </div>
-        <div className={styles.scoreCol}>
-          <ScoreBadge score={movie.imdbScore} type="imdb" />
-          <span className={styles.scoreLabel}>IMDb</span>
-        </div>
+      <div className={styles.badges}>
+        <RTBadge score={movie.criticsScore} />
+        <ImdbBadge rating={movie.imdbRating} />
       </div>
     </div>
   );
@@ -58,57 +67,58 @@ function MovieRow({ movie, rank }) {
 
 export default function Home() {
   const [flightNum, setFlightNum] = useState('');
-  const [date, setDate] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [data, setData] = useState(null);
+  const [date, setDate]           = useState('');
+  const [loading, setLoading]     = useState(false);
+  const [error, setError]         = useState('');
+  const [data, setData]           = useState(null);
+  const [sortBy, setSortBy]       = useState('rt-desc');
 
   const todayISO = new Date().toISOString().split('T')[0];
 
   async function handleSubmit(e) {
     e.preventDefault();
     if (!flightNum.trim() || !date) return;
-
-    setLoading(true);
-    setError('');
-    setData(null);
-
+    setLoading(true); setError(''); setData(null);
     try {
-      const params = new URLSearchParams({ flight: flightNum.trim(), date });
-      const res = await fetch(`/api/search?${params}`);
+      const res  = await fetch(`/api/search?${new URLSearchParams({ flight: flightNum.trim(), date })}`);
       const json = await res.json();
-
-      if (!res.ok) {
-        setError(json.error || 'Something went wrong.');
-      } else {
-        setData(json);
-      }
-    } catch {
-      setError('Network error — please try again.');
-    } finally {
-      setLoading(false);
-    }
+      if (!res.ok) { setError(json.error || 'Something went wrong.'); }
+      else         { setData(json); setSortBy('rt-desc'); }
+    } catch { setError('Network error — please try again.'); }
+    finally { setLoading(false); }
   }
 
-  const strongPicks = data?.movies.filter(
-    (m) => m.criticsScore !== null && m.criticsScore >= 80
-  ) || [];
-  const certFresh = data?.movies.filter((m) => m.certified) || [];
+  const sorted = useMemo(() => {
+    if (!data?.movies) return [];
+    const mv = [...data.movies];
+    switch (sortBy) {
+      case 'rt-desc': return mv.sort((a,b) => (b.criticsScore ?? -1)   - (a.criticsScore ?? -1));
+      case 'rt-asc':  return mv.sort((a,b) => (a.criticsScore ?? 101)  - (b.criticsScore ?? 101));
+      case 'imdb':    return mv.sort((a,b) => (b.imdbScore ?? -1)      - (a.imdbScore ?? -1));
+      case 'newest':  return mv.sort((a,b) => (b.year ?? 0)            - (a.year ?? 0));
+      case 'oldest':  return mv.sort((a,b) => (a.year ?? 9999)         - (b.year ?? 9999));
+      case 'az':      return mv.sort((a,b) => a.title.localeCompare(b.title));
+      default:        return mv;
+    }
+  }, [data, sortBy]);
+
+  const strongPicks = data?.movies.filter(m => m.criticsScore !== null && m.criticsScore >= 80) || [];
 
   return (
     <main className={styles.main}>
+
       <header className={styles.header}>
         <div className={styles.headerInner}>
-          <div className={styles.logo}>
-            <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true">
-              <circle cx="14" cy="14" r="14" fill="#C8102E" />
-              <path d="M8 18l4-8 4 8M9.5 15.5h5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-              <circle cx="20" cy="10" r="2.5" fill="white" opacity="0.85" />
+          <div className={styles.logoWrap}>
+            <svg width="36" height="36" viewBox="0 0 36 36" fill="none" aria-hidden="true">
+              <circle cx="18" cy="18" r="18" fill="#C8102E"/>
+              <path d="M10 24l5.5-10.5 5.5 10.5M11.5 20.5h8" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <circle cx="26" cy="12" r="3" fill="white" opacity="0.9"/>
             </svg>
           </div>
           <div>
-            <h1 className={styles.title}>AA Movie Rater</h1>
-            <p className={styles.subtitle}>Inflight entertainment guide powered by Rotten Tomatoes</p>
+            <h1 className={styles.headerTitle}>AA Movie Rater</h1>
+            <p className={styles.headerSub}>Inflight entertainment guide · Rotten Tomatoes + IMDb</p>
           </div>
         </div>
       </header>
@@ -117,31 +127,16 @@ export default function Home() {
         <form onSubmit={handleSubmit} className={styles.form}>
           <div className={styles.formGroup}>
             <label htmlFor="flight" className={styles.label}>Flight number</label>
-            <input
-              id="flight"
-              type="text"
-              value={flightNum}
-              onChange={(e) => setFlightNum(e.target.value)}
-              placeholder="e.g. 67 or AA67"
-              className={styles.input}
-              required
-              autoComplete="off"
-            />
+            <input id="flight" type="text" value={flightNum} onChange={e => setFlightNum(e.target.value)}
+              placeholder="e.g. 67 or AA67" className={styles.input} required autoComplete="off" />
           </div>
           <div className={styles.formGroup}>
             <label htmlFor="date" className={styles.label}>Departure date</label>
-            <input
-              id="date"
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              min={todayISO}
-              className={styles.input}
-              required
-            />
+            <input id="date" type="date" value={date} onChange={e => setDate(e.target.value)}
+              min={todayISO} className={styles.input} required />
           </div>
           <button type="submit" className={styles.button} disabled={loading}>
-            {loading ? 'Looking up movies…' : 'Get movie ratings'}
+            {loading ? 'Loading…' : 'Get ratings'}
           </button>
         </form>
         {error && <p className={styles.error}>{error}</p>}
@@ -149,52 +144,63 @@ export default function Home() {
 
       {loading && (
         <div className={styles.loading}>
-          <div className={styles.spinner} aria-hidden="true" />
-          <p>Fetching entertainment catalog and Rotten Tomatoes scores…</p>
-          <p className={styles.loadingNote}>This can take 15–30 seconds while we look up each film in parallel.</p>
+          <div className={styles.plane}>✈</div>
+          <p className={styles.loadingText}>Looking up your flight catalog…</p>
+          <p className={styles.loadingNote}>Fetching RT & IMDb scores for every film. Takes ~10s.</p>
         </div>
       )}
 
       {data && (
         <section className={styles.results}>
-          <div className={styles.flightHeader}>
-            <div>
-              <h2 className={styles.flightTitle}>
-                {data.flight.number}
-                {data.flight.departure && data.flight.arrival
-                  ? ` · ${data.flight.departure} → ${data.flight.arrival}`
-                  : ''}
-              </h2>
-              <p className={styles.flightDate}>{formatDate(data.flight.date)}</p>
+
+          <div className={styles.flightBanner}>
+            <div className={styles.flightBannerLeft}>
+              <div className={styles.flightRoute}>
+                <span className={styles.airport}>{data.flight.departure}</span>
+                <span className={styles.arrow}>→</span>
+                <span className={styles.airport}>{data.flight.arrival}</span>
+              </div>
+              <div className={styles.flightMeta}>
+                {data.flight.number} · {formatDate(data.flight.date)}
+              </div>
             </div>
             <div className={styles.statRow}>
-              <StatPill label="Movies" value={data.totalMovies} />
-              <StatPill label="Strong picks" value={strongPicks.length} accent />
-              <StatPill label="Certified Fresh" value={certFresh.length} accent />
+              <div className={styles.stat}>
+                <span className={styles.statNum}>{data.totalMovies}</span>
+                <span className={styles.statLbl}>movies</span>
+              </div>
+              <div className={`${styles.stat} ${styles.statAccent}`}>
+                <span className={styles.statNum}>{strongPicks.length}</span>
+                <span className={styles.statLbl}>strong picks</span>
+              </div>
             </div>
           </div>
 
-          <div className={styles.columnLabels}>
-            <span className={styles.columnCritic}>Critics</span>
-            <span className={styles.columnAudience}>IMDb</span>
+          <div className={styles.sortRow}>
+            <span className={styles.sortLabel}>Sort by</span>
+            {SORT_OPTIONS.map(o => (
+              <button key={o.key} onClick={() => setSortBy(o.key)}
+                className={`${styles.sortBtn} ${sortBy === o.key ? styles.sortBtnActive : ''}`}>
+                {o.label}
+              </button>
+            ))}
+          </div>
+
+          <div className={styles.colHeaders}>
+            <span className={styles.colRt}>RT</span>
+            <span className={styles.colImdb}>IMDb</span>
           </div>
 
           <div className={styles.movieList}>
-            {data.movies.map((movie, i) => (
+            {sorted.map((movie, i) => (
               <MovieRow key={movie.title} movie={movie} rank={i + 1} />
             ))}
           </div>
 
           <p className={styles.footer}>
-            Scores from{' '}
-            <a href="https://www.rottentomatoes.com" target="_blank" rel="noopener noreferrer">
-              Rotten Tomatoes
-            </a>
-            . Entertainment catalog from{' '}
-            <a href="https://entertainment.aa.com" target="_blank" rel="noopener noreferrer">
-              American Airlines
-            </a>
-            .
+            RT scores via <a href="https://www.omdbapi.com" target="_blank" rel="noopener noreferrer">OMDB</a> ·
+            New releases may not have RT scores yet ·
+            Entertainment catalog from <a href="https://entertainment.aa.com" target="_blank" rel="noopener noreferrer">American Airlines</a>
           </p>
         </section>
       )}
@@ -202,18 +208,9 @@ export default function Home() {
   );
 }
 
-function StatPill({ label, value, accent }) {
-  return (
-    <div className={`${styles.statPill} ${accent ? styles.statPillAccent : ''}`}>
-      <span className={styles.statVal}>{value}</span>
-      <span className={styles.statLabel}>{label}</span>
-    </div>
-  );
-}
-
 function formatDate(iso) {
   if (!iso) return '';
-  const [year, month, day] = iso.split('-');
-  const d = new Date(Number(year), Number(month) - 1, Number(day));
-  return d.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const [y, m, d] = iso.split('-');
+  return new Date(Number(y), Number(m) - 1, Number(d))
+    .toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
 }

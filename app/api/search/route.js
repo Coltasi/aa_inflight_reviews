@@ -146,7 +146,7 @@ export async function GET(request) {
         genre: omdb.genre || movie.genre || null,
         criticsScore: omdb.criticsScore,
         imdbScore: omdb.imdbScore,
-        imdbRating: omdb.imdbRating,
+        imdbRating: omdb.imdbRating ? omdb.imdbRating.replace('/10','') + '/10' : null,
         imdbId: omdb.imdbId,
         rtFound: omdb.found,
       };
