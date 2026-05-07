@@ -241,26 +241,16 @@ export default function Home() {
             {genres.length > 0 && (
               <div className={s.genreBar}>
                 <span className={s.sortLbl}>Genre</span>
-                <button
-                  onClick={() => setGenreFilter('All')}
-                  className={`${s.genreBtn} ${genreFilter === 'All' ? s.genreActive : ''}`}>
-                  All
-                </button>
-                {hasKids && (
-                  <button
-                    onClick={() => setGenreFilter('Kids')}
-                    className={`${s.genreBtn} ${s.genreKids} ${genreFilter === 'Kids' ? s.genreActive : ''}`}>
-                    👶 Kids
-                  </button>
-                )}
-                {genres
-                  .filter(g => !KIDS_GENRES.includes(g))
-                  .map(g => (
-                    <button key={g} onClick={() => setGenreFilter(g)}
-                      className={`${s.genreBtn} ${genreFilter === g ? s.genreActive : ''}`}>
-                      {g}
-                    </button>
-                  ))}
+                <select
+                  value={genreFilter}
+                  onChange={e => setGenreFilter(e.target.value)}
+                  className={s.genreSelect}>
+                  <option value="All">All genres</option>
+                  {hasKids && <option value="Kids">👶 Kids</option>}
+                  {genres
+                    .filter(g => !KIDS_GENRES.includes(g))
+                    .map(g => <option key={g} value={g}>{g}</option>)}
+                </select>
               </div>
             )}
 
