@@ -142,8 +142,8 @@ export default function Home() {
           <div className={s.logoRow}>
             <span className={s.logoIcon} aria-hidden="true">🎬</span>
             <div>
-              <h1 className={s.siteName}>The Cabin Critic</h1>
-              <p className={s.tagline}>Know what to watch before you board ✈️</p>
+              <h1 className={s.siteName}><a href="/" className={s.siteNameLink}>The Cabin Critic</a></h1>
+              <p className={s.tagline}>The best way to pick your movie on American Airlines ✈️</p>
             </div>
             <span className={s.popcorn} aria-hidden="true">🍿</span>
           </div>
