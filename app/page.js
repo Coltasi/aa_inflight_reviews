@@ -70,21 +70,18 @@ function MovieRow({ movie, rank }) {
 
 export default function Home() {
   const [flightNum, setFlightNum] = useState('');
-  const [date, setDate]           = useState('');
   const [loading, setLoading]     = useState(false);
   const [error, setError]         = useState('');
   const [data, setData]           = useState(null);
   const [sortBy, setSortBy]       = useState('rt-desc');
   const [genreFilter, setGenreFilter] = useState('All');
 
-  const todayISO = new Date().toISOString().split('T')[0];
-
   async function handleSubmit(e) {
     e.preventDefault();
-    if (!flightNum.trim() || !date) return;
+    if (!flightNum.trim()) return;
     setLoading(true); setError(''); setData(null);
     try {
-      const res  = await fetch(`/api/search?${new URLSearchParams({ flight: flightNum.trim(), date })}`);
+      const res  = await fetch(`/api/search?${new URLSearchParams({ flight: flightNum.trim() })}`);
       const json = await res.json();
       if (!res.ok) setError(json.error || 'Something went wrong.');
       else { setData(json); setSortBy('rt-desc'); setGenreFilter('All'); }
@@ -168,12 +165,6 @@ export default function Home() {
                 onChange={e => setFlightNum(e.target.value)}
                 placeholder="e.g. 67 or AA67"
                 className={s.input} required autoComplete="off" />
-            </div>
-            <div className={s.field}>
-              <label htmlFor="date" className={s.label}>Departure date</label>
-              <input id="date" type="date" value={date}
-                onChange={e => setDate(e.target.value)}
-                min={todayISO} className={s.input} required />
             </div>
             <button type="submit" className={s.btn} disabled={loading}>
               {loading ? 'Loading…' : 'Get ratings ✈'}
