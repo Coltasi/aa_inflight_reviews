@@ -195,6 +195,7 @@ export async function GET(request) {
       departure: flight.dep || flight.departureStation,
       arrival: flight.arv || flight.arrivalStation,
       date,
+      aircraft: flight.equipment || flight.equipmentCode || flight.aircraftType || flight.equipment_type || null,
     },
     totalMovies: results.length,
     movies: results,

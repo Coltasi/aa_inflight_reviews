@@ -3,6 +3,8 @@
 import { useState, useMemo } from 'react';
 import s from './page.module.css';
 
+const KIDS_GENRES = ['Animation', 'Family'];
+
 function nullLast(a, b, desc = true) {
   if (a === null && b === null) return 0;
   if (a === null) return 1;
@@ -73,6 +75,7 @@ export default function Home() {
   const [error, setError]         = useState('');
   const [data, setData]           = useState(null);
   const [sortBy, setSortBy]       = useState('rt-desc');
+  const [genreFilter, setGenreFilter] = useState('All');
 
   const todayISO = new Date().toISOString().split('T')[0];
 
@@ -84,7 +87,7 @@ export default function Home() {
       const res  = await fetch(`/api/search?${new URLSearchParams({ flight: flightNum.trim(), date })}`);
       const json = await res.json();
       if (!res.ok) setError(json.error || 'Something went wrong.');
-      else { setData(json); setSortBy('rt-desc'); }
+      else { setData(json); setSortBy('rt-desc'); setGenreFilter('All'); }
     } catch { setError('Network error — please try again.'); }
     finally  { setLoading(false); }
   }
@@ -102,6 +105,31 @@ export default function Home() {
       default:        return mv;
     }
   }, [data, sortBy]);
+
+  // Extract unique individual genres from all movies
+  const genres = useMemo(() => {
+    if (!data?.movies) return [];
+    const set = new Set();
+    data.movies.forEach(m => {
+      if (m.genre) {
+        m.genre.split(' / ').forEach(g => set.add(g.trim()));
+      }
+    });
+    return Array.from(set).sort();
+  }, [data]);
+
+  // Has any kids-friendly content?
+  const hasKids = useMemo(() =>
+    genres.some(g => KIDS_GENRES.includes(g)), [genres]);
+
+  // Apply genre filter on top of sort
+  const filtered = useMemo(() => {
+    if (genreFilter === 'All') return sorted;
+    if (genreFilter === 'Kids') {
+      return sorted.filter(m => m.genre && KIDS_GENRES.some(kg => m.genre.includes(kg)));
+    }
+    return sorted.filter(m => m.genre && m.genre.includes(genreFilter));
+  }, [sorted, genreFilter]);
 
   const strongCount = data?.movies.filter(m => m.criticsScore >= 80).length ?? 0;
 
@@ -179,7 +207,13 @@ export default function Home() {
                   <span className={s.routePlane}>✈</span>
                   <span className={s.iata}>{data.flight.arrival}</span>
                 </div>
-                <p className={s.flightSub}>{data.flight.number} · {formatDate(data.flight.date)}</p>
+                <p className={s.flightSub}>
+                  {data.flight.number} · {formatDate(data.flight.date)}
+                  {data.flight.aircraft && <span> · {data.flight.aircraft}</span>}
+                </p>
+                <p className={s.catalogId} title="Unique catalog ID fetched directly from AA's entertainment system">
+                  ✓ Live catalog · ID {data.flight.id}
+                </p>
               </div>
               <div className={s.stats}>
                 <div className={s.stat}>
@@ -203,15 +237,45 @@ export default function Home() {
               ))}
             </div>
 
+            {/* ── Genre filter ── */}
+            {genres.length > 0 && (
+              <div className={s.genreBar}>
+                <span className={s.sortLbl}>Genre</span>
+                <button
+                  onClick={() => setGenreFilter('All')}
+                  className={`${s.genreBtn} ${genreFilter === 'All' ? s.genreActive : ''}`}>
+                  All
+                </button>
+                {hasKids && (
+                  <button
+                    onClick={() => setGenreFilter('Kids')}
+                    className={`${s.genreBtn} ${s.genreKids} ${genreFilter === 'Kids' ? s.genreActive : ''}`}>
+                    👶 Kids
+                  </button>
+                )}
+                {genres
+                  .filter(g => !KIDS_GENRES.includes(g))
+                  .map(g => (
+                    <button key={g} onClick={() => setGenreFilter(g)}
+                      className={`${s.genreBtn} ${genreFilter === g ? s.genreActive : ''}`}>
+                      {g}
+                    </button>
+                  ))}
+              </div>
+            )}
+
             <div className={s.colHdr}>
               <span className={s.colRt}>RT</span>
               <span className={s.colImdb}>IMDb</span>
             </div>
 
             <div className={s.list}>
-              {sorted.map((movie, i) => (
-                <MovieRow key={`${movie.title}-${i}`} movie={movie} rank={i + 1} />
-              ))}
+              {filtered.length > 0
+                ? filtered.map((movie, i) => (
+                    <MovieRow key={`${movie.title}-${i}`} movie={movie} rank={i + 1} />
+                  ))
+                : <p className={s.emptyGenre}>No {genreFilter} movies on this flight.</p>
+              }
             </div>
 
             <p className={s.footer}>

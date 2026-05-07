@@ -315,6 +315,13 @@
   letter-spacing: 0.02em;
 }
 
+.catalogId {
+  font-size: 11px;
+  color: rgba(255,255,255,0.3);
+  letter-spacing: 0.02em;
+  margin-top: 4px;
+}
+
 .stats { display: flex; gap: 8px; }
 
 .stat {
@@ -385,6 +392,56 @@
   border-color: var(--red);
   color: #fff;
   font-weight: 700;
+}
+
+/* ── Genre filter ── */
+.genreBar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 10px 0;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+.genreBtn {
+  height: 28px;
+  padding: 0 12px;
+  background: transparent;
+  border: 1.5px solid var(--border);
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+
+.genreBtn:hover { border-color: var(--navy); color: var(--navy); }
+
+.genreKids { border-color: #f0abfc; color: #a21caf; }
+.genreKids:hover { border-color: #a21caf; background: #fdf4ff; }
+
+.genreActive {
+  background: var(--navy);
+  border-color: var(--navy);
+  color: #fff;
+  font-weight: 700;
+}
+
+.genreKids.genreActive {
+  background: #a21caf;
+  border-color: #a21caf;
+  color: #fff;
+}
+
+.emptyGenre {
+  padding: 2rem 0;
+  text-align: center;
+  font-size: 14px;
+  color: var(--muted);
 }
 
 /* Column headers */
