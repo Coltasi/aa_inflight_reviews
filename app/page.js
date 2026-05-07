@@ -265,6 +265,14 @@ export default function Home() {
             </p>
           </section>
         )}
+
+        <footer className={s.siteFooter}>
+          <span>© {new Date().getFullYear()} The Cabin Critic</span>
+          <span className={s.footerDot}>·</span>
+          <a href="/about" className={s.footerLink}>About</a>
+          <span className={s.footerDot}>·</span>
+          <a href="/privacy" className={s.footerLink}>Privacy Policy</a>
+        </footer>
       </main>
     </div>
   );

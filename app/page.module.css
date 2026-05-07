@@ -563,3 +563,26 @@ a.title:hover { color: var(--red); }
 }
 
 .footer a:hover { color: var(--red); }
+
+/* ── Site-wide footer ── */
+.siteFooter {
+  margin-top: 3rem;
+  padding: 1.5rem 0 2rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #b0b7c3;
+  flex-wrap: wrap;
+}
+
+.footerDot { color: #d1d5db; }
+
+.footerLink {
+  color: #b0b7c3;
+  transition: color 0.15s;
+}
+
+.footerLink:hover { color: var(--muted); }
