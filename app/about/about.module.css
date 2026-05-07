@@ -45,14 +45,24 @@
   margin: 2rem 0 0.6rem;
 }
 
-p {
+.body {
   font-size: 15px;
   color: #374151;
   line-height: 1.75;
 }
 
-a { color: var(--red); }
-a:hover { text-decoration: underline; }
+.body + .body { margin-top: 0.75rem; }
+
+.link { color: var(--red); }
+.link:hover { text-decoration: underline; }
+
+.list {
+  padding-left: 1.25rem;
+  margin-top: 0.5rem;
+  line-height: 2;
+  font-size: 15px;
+  color: #374151;
+}
 
 .footer {
   margin-top: 3rem;
@@ -62,5 +72,5 @@ a:hover { text-decoration: underline; }
   color: #b0b7c3;
 }
 
-.footer a { color: #b0b7c3; }
-.footer a:hover { color: var(--muted); text-decoration: none; }
+.footerLink { color: #b0b7c3; }
+.footerLink:hover { color: var(--muted); text-decoration: none; }
